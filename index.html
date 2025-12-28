@@ -104,12 +104,20 @@
         }
 
         header { display: flex; flex-direction: column; align-items: center; margin-bottom: 0.5rem; text-align: center; }
-        .logo {
-            width: 86px; height: 86px; margin-bottom: 15px; 
-            border-radius: 20px; 
-            background-image: var(--logo-url); background-size: cover; background-position: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1); cursor: pointer;
-        }
+.logo {
+    width: 150px;       /* 增大寬度 */
+    height: 150px;      /* 高度必須一致，保持正方形 */
+    margin-bottom: 20px; /* 建議稍微增加底部間距，讓比例更協調 */
+    border-radius: 28px; /* 隨著變大，圓角也可以稍微加大，維持 Squircle 比例 */
+    
+    /* 以下保持不動 */
+    background-image: var(--logo-url); 
+    background-size: cover; 
+    background-position: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+    cursor: pointer;
+}
+
         .logo:hover { transform: scale(1.05); }
         
         h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 5px; color: var(--text-main); }
@@ -259,7 +267,7 @@
         <div class="glass-container">
             <header>
                 <div class="logo"></div>
-                <h1>霓喃-時域協議：日蝕</h1>
+                <h1>霓喃日蝕</h1>
                 <div class="subtitle">Temporal Protocol: Eclipse</div>
             </header>
             
