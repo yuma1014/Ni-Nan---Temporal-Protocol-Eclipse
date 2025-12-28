@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>霓喃-時域協議：日蝕</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="icon" type="image/png" href="logo.png">
+
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=SF+Pro+Display:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- 圖片設定 (本地 PNG) --- */
+        :root {
+            --logo-url: url('logo.png'); 
+            --bg-day-pc: url('bg-day-pc.png');
+            --bg-night-pc: url('bg-night-pc.png');
+            --bg-day-mobile: url('bg-day-mobile.png');
+            --bg-night-mobile: url('bg-night-mobile.png');
+        }
+
+        /* --- 變數設定 --- */
+        :root {
+            --ios-blue: #007AFF;
+            --ios-gray-light: #F2F2F7;
+            --ios-fill-light: rgba(118, 118, 128, 0.12);
+            --text-main: #1d1d1f;
+            --text-sub: #86868b;
+            
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            
+            --radius-box: 28px;
+            --radius-input: 12px;
+            --radius-btn: 14px;
+        }
+
+        body.night-mode {
+            --text-main: #f5f5f7;
+            --text-sub: #86868b;
+            --glass-bg: rgba(30, 30, 30, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            --ios-fill-light: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box; margin: 0; padding: 0;
+            transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Noto Sans TC", sans-serif;
+        }
+
+        html { scroll-behavior: smooth; }
+        body {
+            background-color: #000; color: var(--text-main);
+            overflow-x: hidden; overflow-y: scroll;
+            scroll-snap-type: y mandatory; 
+        }
+
+        /* 背景層 */
+        .bg-fixed { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+        .bg-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover; background-position: center;
+            transition: opacity 1.5s ease-in-out;
+        }
+        #bg-day { opacity: 1; background-image: var(--bg-day-pc); }
+        #bg-night { opacity: 0; background-image: var(--bg-night-pc); }
+        body.night-mode #bg-day { opacity: 0; }
+        body.night-mode #bg-night { opacity: 1; }
+
+        @media (max-width: 768px) {
+            #bg-day { background-image: var(--bg-day-mobile); }
+            #bg-night { background-image: var(--bg-night-mobile); }
+        }
+
+        section {
+            width: 100vw; min-height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            padding: 20px; scroll-snap-align: start; position: relative;
+        }
+
+        /* --- Page 1: App --- */
+        #app-section { z-index: 2; }
+        
+        .glass-container {
+            width: 100%; max-width: 480px; 
+            background: var(--glass-bg);
+            backdrop-filter: saturate(180%) blur(25px); 
+            -webkit-backdrop-filter: saturate(180%) blur(25px);
+            border-radius: var(--radius-box); 
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow); 
+            padding: 2.5rem;
+            display: flex; flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        header { display: flex; flex-direction: column; align-items: center; margin-bottom: 0.5rem; text-align: center; }
+        .logo {
+            width: 86px; height: 86px; margin-bottom: 15px; 
+            border-radius: 20px; 
+            background-image: var(--logo-url); background-size: cover; background-position: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); cursor: pointer;
+        }
+        .logo:hover { transform: scale(1.05); }
+        
+        h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 5px; color: var(--text-main); }
+        .subtitle { font-size: 0.8rem; color: var(--text-sub); font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
+
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+        label { font-size: 0.8rem; font-weight: 600; color: var(--text-sub); margin-left: 4px; letter-spacing: 0; text-transform: uppercase; }
+        input, textarea {
+            width: 100%; background: var(--ios-fill-light);
+            border: none; color: var(--text-main); padding: 16px;
+            font-size: 1rem; border-radius: var(--radius-input);
+        }
+        input:focus, textarea:focus { outline: none; background: rgba(120, 120, 128, 0.2); transform: scale(1.01); }
+        input:hover, textarea:hover { transform: scale(1.005); }
+        textarea { resize: none; min-height: 110px; }
+
+        .btn-group { display: flex; gap: 12px; margin-top: 0.5rem; }
+        button {
+            flex: 1; padding: 16px; border: none; border-radius: var(--radius-btn);
+            font-size: 1rem; font-weight: 600; cursor: pointer; letter-spacing: -0.01em; 
+        }
+        .btn-encrypt { background: var(--text-main); color: #fff; }
+        body.night-mode .btn-encrypt { background: var(--ios-blue); color: #fff; }
+        .btn-decrypt { background: var(--ios-fill-light); color: var(--text-main); }
+        body.night-mode .btn-decrypt { background: rgba(255,255,255,0.1); }
+        button:hover { transform: scale(1.02); filter: brightness(1.1); }
+        button:active { transform: scale(0.96); }
+
+        .output-area {
+            background: var(--ios-fill-light); border-radius: var(--radius-input);
+            padding: 16px; min-height: 80px; position: relative; margin-top: 0.5rem;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .output-label { position: absolute; top: -8px; left: 12px; background: var(--text-sub); color: #fff; padding: 2px 8px; font-size: 0.6rem; border-radius: 4px; font-weight: 700; }
+        #result-display { font-family: 'SF Mono', 'Menlo', monospace; font-size: 0.9rem; word-break: break-all; opacity: 0; line-height: 1.4; }
+        .status-msg { font-size: 0.8rem; text-align: center; margin-top: 10px; color: var(--ios-blue); font-weight: 500; min-height: 20px;}
+
+        .scroll-indicator {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            color: #fff; /* 修正為白色，避免看不見 */
+            text-shadow: 0 2px 5px rgba(0,0,0,0.5); /* 增加陰影 */
+            opacity: 0.8; animation: bounce 2s infinite;
+            font-size: 1.5rem; cursor: pointer; z-index: 10;
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
+            40% {transform: translateX(-50%) translateY(-10px);}
+            60% {transform: translateX(-50%) translateY(-5px);}
+        }
+
+        /* --- Page 2: Info (修正顯示與動畫) --- */
+        #info-section { z-index: 2; padding-top: 80px; padding-bottom: 60px; overflow: hidden; }
+        .info-container { width: 100%; max-width: 960px; display: flex; flex-direction: column; gap: 50px; padding: 0 20px; position: relative; }
+        
+        .info-header { text-align: center; }
+        
+        /* 標題與內文：強制白色 + 文字陰影 (確保在任何背景都可見) */
+        .info-title {
+            font-size: 3.5rem; font-weight: 700; line-height: 1.1;
+            color: #ffffff; /* 強制白色 */
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5); /* 強烈陰影 */
+            margin-bottom: 20px; letter-spacing: -0.02em; 
+        }
+        .info-desc { 
+            font-size: 1.3rem; 
+            color: #ffffff; /* 強制白色 */
+            text-shadow: 0 2px 5px rgba(0,0,0,0.5); /* 陰影 */
+            max-width: 650px; margin: 0 auto; line-height: 1.5; text-align: center; font-weight: 500;
+        }
+
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        
+        /* 卡片設計：半透明白底/黑底 */
+        .feature-card {
+            background: rgba(0, 0, 0, 0.4); /* 稍微加深背景，讓白字更明顯 */
+            backdrop-filter: saturate(180%) blur(20px); 
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            border-radius: 24px; padding: 40px 30px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .feature-card:hover { transform: translateY(-8px) scale(1.01) !important; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        
+        .icon-large { font-size: 3.5rem; margin-bottom: 20px; display: block; text-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        
+        /* 卡片文字：強制白色 */
+        .card-title { 
+            font-size: 1.3rem; font-weight: 700; margin-bottom: 10px; 
+            color: #ffffff; 
+            letter-spacing: -0.01em; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .card-text { 
+            font-size: 1rem; 
+            color: rgba(255, 255, 255, 0.9); /* 微調透明度 */
+            line-height: 1.5; 
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+        
+        /* Footer：強制白色 */
+        .main-footer { 
+            text-align: center; margin-top: 40px; 
+            color: #ffffff; /* 強制白色 */
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            font-size: 0.75rem; 
+        }
+
+        @media (max-width: 768px) {
+            .glass-container { padding: 2rem 1.5rem; max-width: 92%; }
+            .info-title { font-size: 2.5rem; }
+            .features-grid { grid-template-columns: 1fr; }
+            .main-footer { margin-bottom: 40px; } 
+        }
+
+        /* --- 動畫修復 --- */
+        /* 1. 預設狀態 (Hidden) */
+        .observe-target {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* 2. 觸發狀態 (Visible) */
+        .fade-in-up { 
+            opacity: 1 !important; 
+            transform: translateY(0) !important; 
+        }
+
+        /* 3. 延遲設定 */
+        .delay-100 { transition-delay: 0.1s; } 
+        .delay-200 { transition-delay: 0.2s; }
+        .delay-300 { transition-delay: 0.3s; } 
+        .delay-400 { transition-delay: 0.4s; }
+        .delay-500 { transition-delay: 0.5s; }
+        
+        @keyframes typeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-result { animation: typeIn 0.5s ease-out forwards; }
+    </style>
+</head>
+<body>
+    <div class="bg-fixed">
+        <div id="bg-day" class="bg-layer"></div>
+        <div id="bg-night" class="bg-layer"></div>
+    </div>
+
+    <section id="app-section">
+        <div class="glass-container">
+            <header>
+                <div class="logo"></div>
+                <h1>霓喃日蝕</h1>
+                <div class="subtitle">Temporal Protocol: Eclipse</div>
+            </header>
+            
+            <div class="input-group">
+                <label>Access Key</label>
+                <input type="text" id="password" placeholder="輸入解密金鑰..." autocomplete="off">
+            </div>
+            
+            <div class="input-group">
+                <label>Data Stream</label>
+                <textarea id="input-text" placeholder="在此輸入訊息..."></textarea>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn-encrypt" onclick="processData('encrypt')">加密</button>
+                <button class="btn-decrypt" onclick="processData('decrypt')">解密</button>
+            </div>
+            
+            <div class="output-area">
+                <span class="output-label">OUTPUT</span>
+                <div id="result-display"></div>
+            </div>
+            <div id="status-log" class="status-msg"></div>
+        </div>
+        
+        <div class="scroll-indicator" onclick="document.getElementById('info-section').scrollIntoView({behavior: 'smooth'})">⌄</div>
+    </section>
+
+    <section id="info-section">
+        <div class="info-container">
+            <div class="info-header">
+                <div class="info-title observe-target">時間，是唯一的鑰匙。</div>
+                <div class="info-desc observe-target delay-100">
+                    結合軍規 AES-256 加密與時間因子。<br>
+                    錯過了當下，訊息將永遠消失在時間的洪流中。
+                </div>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card observe-target delay-200">
+                    <span class="icon-large">🛡️</span>
+                    <div class="card-title">AES-256 GCM</div>
+                    <div class="card-text">採用美國政府標準的加密算法，配合 GCM 完整性驗證，確保數據無可篡改。</div>
+                </div>
+                <div class="feature-card observe-target delay-300">
+                    <span class="icon-large">⚡</span>
+                    <div class="card-title">本地端運算</div>
+                    <div class="card-text">使用 Web Crypto API 在您的設備上直接運算。密碼與數據永遠不會離開您的裝置。</div>
+                </div>
+                <div class="feature-card observe-target delay-400">
+                    <span class="icon-large">⏳</span>
+                    <div class="card-title">日蝕效應</div>
+                    <div class="card-text">金鑰與 UTC 日期綁定。每隔 24 小時金鑰自動銷毀，昨日的密文將永久失效。</div>
+                </div>
+            </div>
+
+            <footer class="main-footer observe-target delay-500">
+                <div id="copyright-text"></div>
+                DESIGNED BY Ni Nan - Temporal Protocol: Eclipse
+            </footer>
+        </div>
+    </section>
+
+<script>
+    // 1. 動畫監聽 (修正邏輯)
+    const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
+    const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // 強制添加 class 觸發 CSS transition
+                requestAnimationFrame(() => {
+                    entry.target.classList.add('fade-in-up');
+                });
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+    
+    // 綁定元素
+    document.querySelectorAll('.observe-target').forEach(el => { observer.observe(el); });
+
+    // 2. 日夜切換
+    function updateTimeAndTheme() {
+        const now = new Date();
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const taiwanTime = new Date(utc + (3600000 * 8));
+        const hour = taiwanTime.getHours();
+        const year = taiwanTime.getFullYear();
+        const isDay = hour >= 6 && hour < 18;
+        
+        if (isDay) { document.body.classList.remove('night-mode'); } 
+        else { document.body.classList.add('night-mode'); }
+        
+        document.getElementById('copyright-text').innerHTML = `&copy;${year} 霓喃-時域協議：日蝕 版權所有`;
+    }
+    updateTimeAndTheme(); setInterval(updateTimeAndTheme, 60000);
+
+    // 3. 加密功能 (維持不變)
+    function bufferToBase64(buffer) {
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        for (let i = 0; i < bytes.byteLength; i++) { binary += String.fromCharCode(bytes[i]); }
+        return window.btoa(binary);
+    }
+    function base64ToBuffer(base64) {
+        const binary_string = window.atob(base64);
+        const bytes = new Uint8Array(binary_string.length);
+        for (let i = 0; i < binary_string.length; i++) { bytes[i] = binary_string.charCodeAt(i); }
+        return bytes.buffer;
+    }
+    async function deriveKey(password) {
+        const encoder = new TextEncoder();
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        const dayId = Math.floor(nowSeconds / 86400);
+        const keyMaterial = password + dayId.toString();
+        const data = encoder.encode(keyMaterial);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        return await crypto.subtle.importKey("raw", hashBuffer, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+    }
+    function typeWriterEffect(element, text) {
+        element.textContent = text;
+        element.classList.remove('animate-result');
+        void element.offsetWidth; 
+        element.classList.add('animate-result');
+    }
+    async function processData(mode) {
+        const password = document.getElementById('password').value;
+        const inputText = document.getElementById('input-text').value;
+        const display = document.getElementById('result-display');
+        const status = document.getElementById('status-log');
+        status.textContent = "運算中..."; 
+        
+        if (!password || !inputText) {
+            status.textContent = "請輸入密碼與內容"; status.style.color = "#ff3b30"; return;
+        }
+        try {
+            const key = await deriveKey(password);
+            const encoder = new TextEncoder(); const decoder = new TextDecoder();
+            if (mode === 'encrypt') {
+                const iv = crypto.getRandomValues(new Uint8Array(12));
+                const encodedData = encoder.encode(inputText);
+                const encryptedContent = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, encodedData);
+                const combined = new Uint8Array(iv.byteLength + encryptedContent.byteLength);
+                combined.set(iv); combined.set(new Uint8Array(encryptedContent), iv.byteLength);
+                const result = bufferToBase64(combined.buffer);
+                typeWriterEffect(display, result);
+                status.textContent = "加密成功 (24H有效)"; status.style.color = "var(--ios-blue)";
+            } else {
+                try {
+                    const combinedBuffer = base64ToBuffer(inputText);
+                    const combinedArray = new Uint8Array(combinedBuffer);
+                    const iv = combinedArray.slice(0, 12); const ciphertext = combinedArray.slice(12);
+                    const decryptedContent = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, ciphertext);
+                    const result = decoder.decode(decryptedContent);
+                    typeWriterEffect(display, result);
+                    status.textContent = "解密成功"; status.style.color = "var(--ios-blue)";
+                } catch (e) { throw new Error("Decrypt Failed"); }
+            }
+        } catch (err) {
+            display.textContent = "";
+            status.textContent = "密碼錯誤或時效已過"; status.style.color = "#ff3b30";
+        }
+    }
+</script>
+</body>
+</html>
